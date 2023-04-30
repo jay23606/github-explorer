@@ -31,6 +31,9 @@
             </tr>
         </table>
         <div class="gh-tbl">
+            <div class="gh-upload-div" style="display:none">
+                <input type="file" class="gh-upload-input" multiple />
+            </div>
             <table></table>
         </div>
         <div class="gh-file-div">
@@ -50,7 +53,8 @@
     };
 
     const ghInput = $$('.gh-input')[0], tbl = $$('.gh-tbl table')[0], ghFile = $$('.gh-file')[0], ghUpBtn = $$('.gh-up-btn')[0],
-        ghFileSave = $$('.gh-file-save')[0], ghFileDel = $$('.gh-file-del')[0], ghFileDiv = $$('.gh-file-div')[0];
+        ghFileSave = $$('.gh-file-save')[0], ghFileDel = $$('.gh-file-del')[0], ghFileDiv = $$('.gh-file-div')[0],
+        ghUploadDiv = $$('.gh-upload-div')[0], ghUploadInput = $$('.gh-upload-input')[0];
 
     //lets get the tab key working the way we might expect it to
     ghFile.on('keydown', (e) => {
@@ -73,10 +77,11 @@
         ghFileDiv.style.display = 'none';
         const arr = ghInput.value.split('/');
         const junk = arr.length===2 && arr[1].trim()=='';
-        if(arr.length===1 || junk) {
-            if(junk) ghInput.value = arr[0];
-            fetchRepos();
+        if (arr.length === 1 || junk) {
+            if (junk) ghInput.value = arr[0];
+            fetchRepos()
         } else fetchDirs();
+        
     }
 
 
@@ -88,6 +93,7 @@
     })
 
     const fetchRepos = () => {
+        ghUploadDiv.style.display = 'none';
         let token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
         token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
         clearGhTbl();
@@ -135,6 +141,7 @@
     const clearGhTbl = () => $$('.gh-tbl table tr').forEach(r=>r.remove());
 
     const fetchDirs = () => {
+        ghUploadDiv.style.display = 'block';
         let token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
         token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
         const arr = ghInput.value.split('/');
@@ -160,7 +167,7 @@
       }
     }
     `;
-      console.log(query);
+      //console.log(query);
         fetch('https://api.github.com/graphql', {
             method: 'POST',
             headers: {'Content-Type': 'application/json','Authorization': `Bearer ${token}`},
@@ -169,11 +176,11 @@
                 variables: { owner, name }
             })
         }).then(response => response.json()).then(data => {
-            console.log(data);
+            //console.log(data);
             const entries = data.data.repository.object.entries;
             entries.sort((a, b) => a.name.localeCompare(b.name));
             const nameWithOwner = data.data.repository.nameWithOwner
-            console.log(entries);
+            //console.log(entries);
             clearGhTbl();
             entries.forEach(entry => {
                 const newRow = tbl.insertRow();
@@ -236,6 +243,35 @@
         })
         .catch(error => console.error(error));
     }
+
+    const uploadFiles = async (input) => {
+        let token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
+        token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
+        const arr = ghInput.value.split('/');
+        if (arr.length < 2) return;
+        const owner = arr[0];
+        const repo = arr[1];
+        let path = '';
+        if (arr.length > 2) path = `${arr.slice(2).join('/')}`;
+        const files = input.files;
+        for (const file of files) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const contents = e.target.result;
+                const gh = new GitHub(token, owner, repo, 'main');
+                console.log((path === '') ? file.name : path + '/' + file.name)
+                await gh.createOrUpdateFile((path === '') ? file.name : path + '/' + file.name, contents, "uploaded using github-explorer");
+            };
+            reader.readAsBinaryString(file);
+            await new Promise(resolve => setTimeout(resolve, 250));
+        }
+        input.value = '';
+        handleEnter();
+    }
+
+
+    ghUploadInput.on('change', async () => await uploadFiles(ghUploadInput));
+
     handleEnter();
 </script>
 </body>
