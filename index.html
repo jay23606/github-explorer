@@ -252,6 +252,9 @@
         setTimeout(() => { input.value = ''; handleEnter() }, 150);
     }
     ghUploadInput.on('change', async () => await uploadFiles(ghUploadInput));
+    const queryString = location.search;
+    const urlParams = new URLSearchParams(queryString);
+    if (urlParams.has('owner')) ghInput.value = urlParams.get('owner');
     handleEnter();
 </script>
 </body>
