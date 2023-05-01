@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width">
   <title></title>
   <style>
-    .gh-tbl{
+    #gh-tbl{
       height:25vh;
       overflow:auto
     }
-    .gh-file{
+    #gh-file{
       height:63vh;
       width:100%
     }
-    .gh .gh-input{width:100%}
+    .gh #gh-input{width:100%}
     .gh table{
         width:100%
     }
@@ -24,22 +24,22 @@
     <div class="gh">
         <table>
             <tr>
-                <td><button class="gh-up-btn">⇧</button></td>
+                <td><button id="gh-up-btn">⇧</button></td>
                 <td style="width:99%">
-                    <input type="text" value="jay23606" class="gh-input" spellcheck="false" placeholder="Enter GitHub owner name and press enter" />
+                    <input type="text" value="jay23606" id="gh-input" spellcheck="false" placeholder="Enter GitHub owner name and press enter" />
                 </td>
             </tr>
         </table>
-        <div class="gh-tbl">
-            <div class="gh-upload-div" style="display:none">
-                <input type="file" class="gh-upload-input" multiple />
+        <div id="gh-tbl">
+            <div id="gh-upload-div" style="display:none">
+                <input type="file" id="gh-upload-input" multiple />
             </div>
             <table></table>
         </div>
-        <div class="gh-file-div">
-            <textarea class="gh-file" spellcheck="false"></textarea>
-            <button class="gh-file-del">Delete</button>
-            <button style="float:right" class="gh-file-save">Save</button>
+        <div id="gh-file-div">
+            <textarea id="gh-file" spellcheck="false"></textarea>
+            <button id="gh-file-del">Delete</button>
+            <button style="float:right" id="gh-file-save">Save</button>
         </div>
     </div>
 <script>
@@ -52,9 +52,9 @@
         return date.toLocaleString(locale, options);
     };
 
-    const ghInput = $$('.gh-input')[0], tbl = $$('.gh-tbl table')[0], ghFile = $$('.gh-file')[0], ghUpBtn = $$('.gh-up-btn')[0],
-        ghFileSave = $$('.gh-file-save')[0], ghFileDel = $$('.gh-file-del')[0], ghFileDiv = $$('.gh-file-div')[0],
-        ghUploadDiv = $$('.gh-upload-div')[0], ghUploadInput = $$('.gh-upload-input')[0];
+    const ghInput = $('gh-input'), tbl = $$('#gh-tbl table')[0], ghFile = $('gh-file'), ghUpBtn = $('gh-up-btn'),
+        ghFileSave = $('gh-file-save'), ghFileDel = $('gh-file-del'), ghFileDiv = $('gh-file-div'),
+        ghUploadDiv = $('gh-upload-div'), ghUploadInput = $('gh-upload-input');
 
     //lets get the tab key working the way we might expect it to
     ghFile.on('keydown', (e) => {
@@ -84,22 +84,27 @@
         
     }
 
-
-    ghUpBtn.on('click', e=>{
+    ghUpBtn.on('click', e => {
         const arr = ghInput.value.split('/');
-        if(arr.length < 2) return;
-        ghInput.value = arr.slice(0, arr.length-1).join('/');
+        if (arr.length < 2) return;
+        ghInput.value = arr.slice(0, arr.length - 1).join('/');
         handleEnter();
-    })
+    });
+
+    const parseGitHubInput = () => {
+        const token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
+        token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
+        const [owner, repo, ...pathArr] = ghInput.value.split('/');
+        const path = pathArr.join('/');
+        return { token, owner, repo, path };
+    };
 
     const fetchRepos = () => {
         ghUploadDiv.style.display = 'none';
-        let token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
-        token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
         clearGhTbl();
-        const arr = ghInput.value.split('/');
-        const owner = arr[0];
-        if(!arr.length) return;
+        const { token, owner } = parseGitHubInput();
+        if (!owner) return;
+
         const query = `
       query {
         user(login: "${owner}") {
@@ -138,21 +143,16 @@
         }).catch(error => console.error(error));
     }
 
-    const clearGhTbl = () => $$('.gh-tbl table tr').forEach(r=>r.remove());
+    const clearGhTbl = () => $$('#gh-tbl table tr').forEach(r=>r.remove());
 
     const fetchDirs = () => {
         ghUploadDiv.style.display = 'block';
-        let token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
-        token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
-        const arr = ghInput.value.split('/');
-        if(arr.length < 2) return;
-        const owner = arr[0];
-        const name = arr[1];
-        let path = '';
-        if(arr.length > 2) path = `${arr.slice(2).join('/')}`;
+        const { token, owner, repo, path } = parseGitHubInput();
+        console.log({ token, owner, repo, path });
+
         const query = `
-    query($owner: String!, $name: String!) {
-      repository(owner: $owner, name: $name) {
+    query($owner: String!, $repo: String!) {
+      repository(owner: $owner, name: $repo) {
         nameWithOwner
         object(expression: "HEAD:${path}") {
           ... on Tree {
@@ -173,7 +173,7 @@
             headers: {'Content-Type': 'application/json','Authorization': `Bearer ${token}`},
             body: JSON.stringify({
                 query: query,
-                variables: { owner, name }
+                variables: { owner, repo }
             })
         }).then(response => response.json()).then(data => {
             //console.log(data);
@@ -202,12 +202,12 @@
             ghFileDiv.style.display = 'block';
             ghFile.focus();
             ghFileSave.onclick = async () => {
-                const gh = new GitHub(token, owner, name, 'main');
+                const gh = new GitHub(token, owner, repo, 'main');
                 await gh.createOrUpdateFile(path, ghFile.value, "added using github-explorer");
                 ghUpBtn.click();
             };
             ghFileDel.onclick = async () => {
-                const gh = new GitHub(token, owner, name, 'main');
+                const gh = new GitHub(token, owner, repo, 'main');
                 await gh.deleteFile(path, "deleted using github-explorer");
                 ghUpBtn.click();
             };
@@ -216,14 +216,7 @@
     }
 
     const fetchFile = () => {
-        let token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
-        token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
-        const arr = ghInput.value.split('/');
-        if(arr.length < 2) return;
-        const owner = arr[0];
-        const repo = arr[1];
-        let path = '';
-        if(arr.length > 2) path = `${arr.slice(2).join('/')}`;
+        const { token, owner, repo, path } = parseGitHubInput();
 
         fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {headers: { Authorization: `Bearer ${token}` }})
         .then(response => response.json()).then(data => {
@@ -245,14 +238,7 @@
     }
 
     const uploadFiles = async (input) => {
-        let token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
-        token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
-        const arr = ghInput.value.split('/');
-        if (arr.length < 2) return;
-        const owner = arr[0];
-        const repo = arr[1];
-        let path = '';
-        if (arr.length > 2) path = `${arr.slice(2).join('/')}`;
+        const { token, owner, repo, path } = parseGitHubInput();
         const files = input.files;
         for (const file of files) {
             const reader = new FileReader();
@@ -263,15 +249,11 @@
                 await gh.createOrUpdateFile((path === '') ? file.name : path + '/' + file.name, contents, "uploaded using github-explorer");
             };
             reader.readAsBinaryString(file);
-            await new Promise(resolve => setTimeout(resolve, 250));
+            await new Promise(resolve => setTimeout(resolve, 150));
         }
-        input.value = '';
-        handleEnter();
+        setTimeout(() => { input.value = ''; handleEnter() }, 150);
     }
-
-
     ghUploadInput.on('change', async () => await uploadFiles(ghUploadInput));
-
     handleEnter();
 </script>
 </body>
