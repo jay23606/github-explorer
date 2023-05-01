@@ -8,8 +8,10 @@ Also added a feature to upload multiple files.
 
 Requires github API token with repo access to be entered which is stored in localStorage.
 
-Can also pass owner in the querystring i.e: 
+Can also pass owner in the querystring, for example: 
+
 index.html?owner=jay23606
+
 index.html?owner=jay23606/chat-gpt-voice/html
 
 Uses GitHub REST and GraphQL endpoints:
