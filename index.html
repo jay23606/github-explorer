@@ -3,20 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
-  <title></title>
+  <title>github explorer</title>
   <style>
-    #gh-tbl{
-      height:25vh;
-      overflow:auto
-    }
-    #gh-file{
-      height:63vh;
-      width:100%
-    }
+    body,textarea,input{background:black; color:white}
+    a { text-decoration: none; color: white}
+    #gh-tbl{height:25vh; overflow:auto}
+    #gh-file{height:63vh; width:100%}
     .gh #gh-input{width:100%}
-    .gh table{
-        width:100%
-    }
+    .gh table{width:100%}
   </style>
   <script src="github.js"></script>
 </head>
@@ -43,6 +37,7 @@
         </div>
     </div>
 <script>
+    //helpers
     $ = id => document.getElementById(id), $el = (el, attrs = {}) => Object.assign(document.createElement(el), attrs);
     $$ = sel => document.querySelectorAll(sel);
     HTMLElement.prototype.on = function (e, fn) { this.addEventListener(e, fn) };
@@ -51,7 +46,9 @@
         const options = { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
         return date.toLocaleString(locale, options);
     };
+    const clearGhTbl = () => $$('#gh-tbl table tr').forEach(r => r.remove());
 
+    //vars
     const ghInput = $('gh-input'), tbl = $$('#gh-tbl table')[0], ghFile = $('gh-file'), ghUpBtn = $('gh-up-btn'),
         ghFileSave = $('gh-file-save'), ghFileDel = $('gh-file-del'), ghFileDiv = $('gh-file-div'),
         ghUploadDiv = $('gh-upload-div'), ghUploadInput = $('gh-upload-input');
@@ -68,10 +65,8 @@
         }
     });
 
-    ghInput.on('keydown', (e) => {
-        if(e.key==='Enter') handleEnter();
-    });
-
+    //handle enter key
+    ghInput.on('keydown', (e) => (e.key === 'Enter') ? handleEnter() : '');
     const handleEnter = () =>{
         ghFile.value = '';
         ghFileDiv.style.display = 'none';
@@ -84,6 +79,7 @@
         
     }
 
+    //handle Up button
     ghUpBtn.on('click', e => {
         const arr = ghInput.value.split('/');
         if (arr.length < 2) return;
@@ -91,6 +87,7 @@
         handleEnter();
     });
 
+    //retrieve token, owner, repo, path
     const parseGitHubInput = () => {
         const token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
         token && token.length >= 10 && localStorage.setItem('GITHUB_API_KEY', token);
@@ -99,12 +96,12 @@
         return { token, owner, repo, path };
     };
 
+    //fetch the repos using graphql and show as a link column and last modified column 
     const fetchRepos = () => {
         ghUploadDiv.style.display = 'none';
         clearGhTbl();
         const { token, owner } = parseGitHubInput();
         if (!owner) return;
-
         const query = `
       query {
         user(login: "${owner}") {
@@ -130,7 +127,7 @@
                 repo = repo.node;
                 const newRow = tbl.insertRow();
                 let newCell = newRow.insertCell();
-                let newText = $el('A', {href: '#', textContent: repo.name});
+                let newText = $el('A', { href: '#', textContent: repo.name, style: 'color:greenyellow' });
                 newText.on('click', e => {
                     ghInput.value += `/${repo.name}`; 
                     fetchDirs();
@@ -143,13 +140,11 @@
         }).catch(error => console.error(error));
     }
 
-    const clearGhTbl = () => $$('#gh-tbl table tr').forEach(r=>r.remove());
-
+    //fetch files within repo and show as a link column (blob or tree) and lineCount column
+    //if it fails, we assume we want to create a new file based on text input provided
     const fetchDirs = () => {
         ghUploadDiv.style.display = 'block';
         const { token, owner, repo, path } = parseGitHubInput();
-        console.log({ token, owner, repo, path });
-
         const query = `
     query($owner: String!, $repo: String!) {
       repository(owner: $owner, name: $repo) {
@@ -185,7 +180,7 @@
             entries.forEach(entry => {
                 const newRow = tbl.insertRow();
                 let newCell = newRow.insertCell();
-                let newText = $el('A', {href: '#', textContent: entry.name});
+                let newText = $el('A', { href: '#', textContent: entry.name, style: (entry.type === 'tree') ? 'color:greenyellow' : '' });
                 newText.on('click', e=>{
                     ghInput.value = `${nameWithOwner}/${entry.path}`; 
                     if (entry.type === 'blob') fetchFile();
@@ -215,6 +210,7 @@
 
     }
 
+    //fetch a file that was identified as a blob by api and allow it to be modifed or deleted
     const fetchFile = () => {
         const { token, owner, repo, path } = parseGitHubInput();
 
@@ -237,6 +233,7 @@
         .catch(error => console.error(error));
     }
 
+    //allow upload of files directly to github from file input (uses some delays--may be a better way)
     const uploadFiles = async (input) => {
         const { token, owner, repo, path } = parseGitHubInput();
         const files = input.files;
