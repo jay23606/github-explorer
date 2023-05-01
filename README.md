@@ -1,6 +1,6 @@
 # github-explorer
 
-Vanilla client-side JS github file explorer/editor using a text input field and an "up" button to navigate directories and a textarea to make edits.
+Vanilla JS github file explorer/editor using a text input field and an "up" button to navigate directories and a textarea to make edits.
 
 To add files just type the name of the file you want in the text input field (can also create directories this way).
 
