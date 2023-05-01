@@ -8,6 +8,10 @@ Also added a feature to upload multiple files.
 
 Requires github API token with repo access to be entered which is stored in localStorage.
 
-Uses GitHub REST and GraphQL endpoints.
+Uses GitHub REST and GraphQL endpoints:
+
+https://docs.github.com/en/graphql/overview/explorer
+
+https://docs.github.com/en/rest/guides/getting-started-with-the-rest-api
 
 ![screenshot](screenshot.png)
