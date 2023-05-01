@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width">
   <title>github explorer</title>
   <style>
-    body,textarea,input{background:black; color:white}
+    html,body,textarea,input{background:black; color:white; margin:0; padding:0}
     a { text-decoration: none; color: white}
-    #gh-tbl{height:25vh; overflow:auto}
-    #gh-file{height:63vh; width:100%}
-    .gh #gh-input{width:100%}
-    .gh table{width:100%}
+    #gh-tbl{height:33vh; overflow:auto}
+    #gh-file { height: calc(66vh - 50px); width: calc(100% - 2px) }
+    .gh #gh-input { width: calc(100% - 2px) }
+    .gh table { width: 100% }
   </style>
   <script src="github.js"></script>
 </head>
@@ -189,7 +189,7 @@
                 newCell.appendChild(newText);
                 //show line count since modified date is hard to get here
                 newCell = newRow.insertCell();
-                newText = document.createTextNode(entry.lineCount);
+                newText = document.createTextNode(entry.lineCount || '');
                 newCell.appendChild(newText);
             });
         }).catch(error => {
