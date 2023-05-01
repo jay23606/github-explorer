@@ -18,6 +18,7 @@
     <div class="gh">
         <table>
             <tr>
+                <td><input type="text" value="main" title="Branch" id="gh-branch" style="width:5em" /></td>
                 <td><button id="gh-up-btn">⇧</button></td>
                 <td style="width:99%">
                     <input type="text" value="jay23606" id="gh-input" spellcheck="false" placeholder="Enter GitHub owner name and press enter" />
@@ -51,7 +52,7 @@
     //vars
     const ghInput = $('gh-input'), tbl = $$('#gh-tbl table')[0], ghFile = $('gh-file'), ghUpBtn = $('gh-up-btn'),
         ghFileSave = $('gh-file-save'), ghFileDel = $('gh-file-del'), ghFileDiv = $('gh-file-div'),
-        ghUploadDiv = $('gh-upload-div'), ghUploadInput = $('gh-upload-input');
+        ghUploadDiv = $('gh-upload-div'), ghUploadInput = $('gh-upload-input'), branch = $('gh-branch');
 
     //lets get the tab key working the way we might expect it to
     ghFile.on('keydown', (e) => {
@@ -67,6 +68,8 @@
 
     //handle enter key
     ghInput.on('keydown', (e) => (e.key === 'Enter') ? handleEnter() : '');
+    branch.on('keydown', (e) => (e.key === 'Enter') ? handleEnter() : '');
+
     const handleEnter = () =>{
         ghFile.value = '';
         ghFileDiv.style.display = 'none';
@@ -149,7 +152,7 @@
     query($owner: String!, $repo: String!) {
       repository(owner: $owner, name: $repo) {
         nameWithOwner
-        object(expression: "HEAD:${path}") {
+        object(expression: "${branch.value}:${path}") { #HEAD
           ... on Tree {
             entries {
               name
@@ -198,12 +201,12 @@
             ghFile.focus();
             ghFileSave.onclick = async () => {
                 const { token, owner, repo, path } = parseGitHubInput();
-                const gh = new GitHub(token, owner, repo, 'main');
+                const gh = new GitHub(token, owner, repo, branch.value);
                 await gh.createOrUpdateFile(path, ghFile.value, "added using github-explorer");
                 ghUpBtn.click();
             };
             ghFileDel.onclick = async () => {
-                const gh = new GitHub(token, owner, repo, 'main');
+                const gh = new GitHub(token, owner, repo, branch.value);
                 await gh.deleteFile(path, "deleted using github-explorer");
                 ghUpBtn.click();
             };
@@ -221,12 +224,12 @@
             ghFile.focus();
             ghFileDiv.style.display = 'block';
             ghFileSave.onclick = async () => {
-                const gh = new GitHub(token, owner, repo, 'main');
+                const gh = new GitHub(token, owner, repo, branch.value);
                 await gh.createOrUpdateFile(path, ghFile.value, "updated using github-explorer");
                 ghUpBtn.click();
             };
             ghFileDel.onclick = async () => {
-                const gh = new GitHub(token, owner, repo, 'main');
+                const gh = new GitHub(token, owner, repo, branch.value);
                 await gh.deleteFile(path, "deleted using github-explorer");
                 ghUpBtn.click();
             };
@@ -242,7 +245,7 @@
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const contents = e.target.result;
-                const gh = new GitHub(token, owner, repo, 'main');
+                const gh = new GitHub(token, owner, repo, branch.value);
                 console.log((path === '') ? file.name : path + '/' + file.name)
                 await gh.createOrUpdateFile((path === '') ? file.name : path + '/' + file.name, contents, "uploaded using github-explorer");
             };
