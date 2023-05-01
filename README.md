@@ -14,6 +14,8 @@ index.html?owner=jay23606
 
 index.html?owner=jay23606/chat-gpt-voice/html
 
+The globe icon will open the file up in a new tab using githack (serve the page basically)
+
 Uses GitHub REST and GraphQL endpoints:
 
 https://docs.github.com/en/graphql/overview/explorer
