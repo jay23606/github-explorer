@@ -197,6 +197,7 @@
             ghFileDiv.style.display = 'block';
             ghFile.focus();
             ghFileSave.onclick = async () => {
+                const { token, owner, repo, path } = parseGitHubInput();
                 const gh = new GitHub(token, owner, repo, 'main');
                 await gh.createOrUpdateFile(path, ghFile.value, "added using github-explorer");
                 ghUpBtn.click();
