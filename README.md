@@ -8,4 +8,6 @@ Also added a feature to upload multiple files.
 
 Requires github API token with repo access to be entered which is stored in localStorage.
 
+Uses GitHub REST and GraphQL endpoints.
+
 ![screenshot](screenshot.png)
