@@ -183,7 +183,12 @@
             entries.forEach(entry => {
                 const newRow = tbl.insertRow();
                 let newCell = newRow.insertCell();
-                let newText = $el('A', { href: '#', textContent: entry.name, style: (entry.type === 'tree') ? 'color:greenyellow' : '' });
+                let newText = null;
+                if(entry.type === 'blob'){
+                    newText = $el('A', { href: `https://raw.githack.com/${nameWithOwner}/${branch.value}/${entry.path}`, textContent: '🌐', target: '_blank' });
+                    newCell.appendChild(newText);
+                }
+                newText = $el('A', { href: '#', textContent: entry.name, style: (entry.type === 'tree') ? 'color:greenyellow' : '' });
                 newText.on('click', e=>{
                     ghInput.value = `${nameWithOwner}/${entry.path}`; 
                     if (entry.type === 'blob') fetchFile();
