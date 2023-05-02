@@ -4,6 +4,10 @@ Github file explorer and editor built with plain client-side JS. It lets you nav
 
 Integrated ChatGPT assistance feature, which displays a Help dialog when you select a portion of text within the textarea and press F1 or Escape.
 
+Live demo:
+
+https://raw.githack.com/jay23606/github-explorer/master/index.html
+
 Uses GitHub REST and GraphQL endpoints:
 
 https://docs.github.com/en/graphql/overview/explorer
