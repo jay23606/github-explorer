@@ -109,6 +109,9 @@
                 helpDiv.style.display = 'none';
                 if (ai) ai.stopStreaming = true;
             }
+        } else if (e.ctrlKey && e.keyCode === 83) {
+            e.preventDefault();
+            ghFileSave.click(); //allows save using Ctrl+s
         }
     });
 
