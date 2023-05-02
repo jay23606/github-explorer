@@ -33,7 +33,12 @@
     <div class="gh">
         <table>
             <tr>
-                <td><input type="text" value="main" title="Branch" id="gh-branch" style="width:5em" /></td>
+                <td>
+                    <!--<input type="text" value="main" title="Branch" id="gh-branch" style="width:5em" />-->
+                    <select id="gh-branch">
+                        <option>main</option>
+                    </select>
+                </td>
                 <td><button id="gh-up-btn">⇧</button></td>
                 <td style="width:99%">
                     <input type="text" value="jay23606" id="gh-input" spellcheck="false" placeholder="Enter GitHub owner name and press enter" />
@@ -208,8 +213,20 @@
         fetch(`https://api.github.com/repos/${owner}/${repo}/branches`)
         .then(response => response.json()).then(branches => {
             console.log(branches);
-            const hasBranch = branches.some(b => b.name === branch.value);
-            if (!hasBranch) branch.value = branches[0].name;
+            const val = branch.value;
+            //const hasBranch = branches.some(b => b.name === val);
+            branch.innerHTML = '';
+            let hasBranch = false;
+            branches.forEach(b => {
+                if (b.name === val) hasBranch = true;
+                const option = document.createElement('option');
+                option.value = b.name;
+                option.text = b.name;
+                branch.appendChild(option);
+            });
+            if (hasBranch) branch.value = val;
+
+            //if (!hasBranch) branch.value = branches[0].name;
             fetchDirs2(token, owner, repo, path);
         }).catch(error => console.error(error));
     }
