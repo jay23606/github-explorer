@@ -213,16 +213,12 @@
             repos.forEach(repo => {
                 repo = repo.node;
                 const newRow = tbl.insertRow();
-                let newCell = null, newText = null;
-
+                let newCell = newRow.insertCell(), newText = null;
                 if (!repo.viewerCanAdminister) {
-                    newCell = newRow.insertCell();
                     newText = $el('A', { href: '#', textContent: '🔀', title: 'Fork this repo' });
                     newText.on('click', e => forkRepo(token, owner, repo.name));
                     newCell.appendChild(newText);
                 }
-
-                newCell = newRow.insertCell();
                 newText = $el('A', { href: '#', textContent: repo.name, style: 'color:greenyellow' });
                 newText.on('click', e => {
                     ghInput.value += `/${repo.name}`; 
