@@ -8,10 +8,10 @@ Live demo:
 
 https://raw.githack.com/jay23606/github-explorer/master/index.html
 
+![screenshot](screenshot.png)
+
 Uses GitHub REST and GraphQL endpoints:
 
 https://docs.github.com/en/graphql/overview/explorer
 
 https://docs.github.com/en/rest/guides/getting-started-with-the-rest-api
-
-![screenshot](screenshot.png)
