@@ -199,11 +199,24 @@
         }).catch(error => console.error(error));
     }
 
-    //fetch files within repo and show as a link column (blob or tree) and lineCount column
-    //if it fails, we assume we want to create a new file based on text input provided
+    //We need to check the branch first
     const fetchDirs = () => {
         ghUploadDiv.style.display = 'block';
         const { token, owner, repo, path } = parseGitHubInput();
+
+        //make sure the branch actually exists
+        fetch(`https://api.github.com/repos/${owner}/${repo}/branches`)
+        .then(response => response.json()).then(branches => {
+            console.log(branches);
+            const hasBranch = branches.some(b => b.name === branch.value);
+            if (!hasBranch) branch.value = branches[0].name;
+            fetchDirs2(token, owner, repo, path);
+        }).catch(error => console.error(error));
+    }
+
+    //fetch files within repo and show as a link column (blob or tree) and lineCount column
+    //if it fails, we assume we want to create a new file based on text input provided
+    const fetchDirs2 = (token, owner, repo, path) => {
         const query = `
     query($owner: String!, $repo: String!) {
       repository(owner: $owner, name: $repo) {
@@ -257,6 +270,7 @@
                 newCell.appendChild(newText);
             });
         }).catch(error => {
+            console.log(error);
             //we must be trying to create a new file if this error is caught
             ghFileDiv.style.display = 'block';
             ghFile.focus();
@@ -272,7 +286,6 @@
                 ghUpBtn.click();
             };
         });
-
     }
 
     //fetch a file that was identified as a blob by api and allow it to be modifed or deleted
