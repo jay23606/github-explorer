@@ -11,8 +11,23 @@
     #gh-file { height: calc(66vh - 50px); width: calc(100% - 2px) }
     .gh #gh-input { width: calc(100% - 2px) }
     .gh table { width: 100% }
+    #help-div {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-height: 90%;
+      background:black;
+      overflow:auto;
+    }
+    fieldset { border: 2px solid yellowgreen; }
   </style>
   <script src="github.js"></script>
+  <script src="openai.js"></script>
 </head>
 <body>
     <div class="gh">
@@ -37,6 +52,13 @@
             <button style="float:right" id="gh-file-save">Save</button>
         </div>
     </div>
+    <div style="display:none" id="help-div">
+        <fieldset>
+            <legend><b>Help</b></legend>
+            <div id="inner-help-div"></div>
+            <button style="float:right" onclick="toggleHelp()">Close</button>
+        </fieldset>
+    </div>
 <script>
     //helpers
     $ = id => document.getElementById(id), $el = (el, attrs = {}) => Object.assign(document.createElement(el), attrs);
@@ -51,11 +73,12 @@
 
     //vars
     const ghInput = $('gh-input'), tbl = $$('#gh-tbl table')[0], ghFile = $('gh-file'), ghUpBtn = $('gh-up-btn'),
-        ghFileSave = $('gh-file-save'), ghFileDel = $('gh-file-del'), ghFileDiv = $('gh-file-div'),
-        ghUploadDiv = $('gh-upload-div'), ghUploadInput = $('gh-upload-input'), branch = $('gh-branch');
+        ghFileSave = $('gh-file-save'), ghFileDel = $('gh-file-del'), ghFileDiv = $('gh-file-div'), helpDiv = $('help-div'),
+        ghUploadDiv = $('gh-upload-div'), ghUploadInput = $('gh-upload-input'), branch = $('gh-branch'), innerHelpDiv = $('inner-help-div');
 
+    let ai = null;
     //lets get the tab key working the way we might expect it to
-    ghFile.on('keydown', (e) => {
+    ghFile.on('keydown', async (e) => {
         if (e.key === 'Tab') {
             e.preventDefault();
             const start = ghFile.selectionStart;
@@ -63,8 +86,41 @@
             const value = ghFile.value;
             ghFile.value = value.substring(0, start) + '    ' + value.substring(end);
             ghFile.selectionStart = ghFile.selectionEnd = start + 4;
+        } else if (e.key === 'F1' || e.key === 'Escape') {
+            e.preventDefault();
+            if (helpDiv.style.display === 'none') {
+                if (ghFile.selectionStart !== ghFile.selectionEnd) {
+                    const selectedText = ghFile.value.substring(ghFile.selectionStart, ghFile.selectionEnd);
+                    const token = localStorage.getItem('OPENAI_API_KEY') || (prompt("Please input OpenAI API key (stored in browser cache)", "") || '').trim();
+                    ai = new OpenAI(token);
+                    helpDiv.style.display = 'block'
+                    helpDiv.focus();
+                    await ai.chat(selectedText, innerHelpDiv)
+                } else helpDiv.style.display = 'block';
+            } else {
+                helpDiv.style.display = 'none';
+                if (ai) ai.stopStreaming = true;
+            }
         }
     });
+
+    const toggleHelp = () => { 
+        if (helpDiv.style.display !== 'none') {
+            helpDiv.style.display = 'none';
+            if (ai) ai.stopStreaming = true;
+        } else {
+            helpDiv.style.display = 'block';
+        }
+    }
+
+    document.body.on('keydown', (e) => {
+        if (!(e.target && (e.target.id === 'gh-file'))) {
+            if (e.key === 'F1' || e.key === 'Escape') {
+                e.preventDefault();
+                toggleHelp();
+            }
+        }
+    })
 
     //handle enter key
     ghInput.on('keydown', (e) => (e.key === 'Enter') ? handleEnter() : '');
