@@ -43,6 +43,9 @@
                 <td style="width:99%">
                     <input type="text" value="jay23606" id="gh-input" spellcheck="false" placeholder="Enter GitHub owner name and press enter" />
                 </td>
+                <td>
+                    <button id="gh-del">🗑️</button>
+                </td>
             </tr>
         </table>
         <div id="gh-tbl">
@@ -53,7 +56,7 @@
         </div>
         <div id="gh-file-div">
             <textarea id="gh-file" spellcheck="false"></textarea>
-            <button id="gh-file-del">Delete</button>
+            <!--<button id="gh-file-del">Delete</button>-->
             <button style="float:right" id="gh-file-save">Save</button>
         </div>
     </div>
@@ -78,7 +81,7 @@
 
     //vars
     const ghInput = $('gh-input'), tbl = $$('#gh-tbl table')[0], ghFile = $('gh-file'), ghUpBtn = $('gh-up-btn'),
-        ghFileSave = $('gh-file-save'), ghFileDel = $('gh-file-del'), ghFileDiv = $('gh-file-div'), helpDiv = $('help-div'),
+        ghFileSave = $('gh-file-save'), ghDel = $('gh-del'), ghFileDiv = $('gh-file-div'), helpDiv = $('help-div'),
         ghUploadDiv = $('gh-upload-div'), ghUploadInput = $('gh-upload-input'), branch = $('gh-branch'), innerHelpDiv = $('inner-help-div');
 
     let ai = null;
@@ -151,6 +154,22 @@
         handleEnter();
     });
 
+    ghDel.on('click', async (e) => {
+        const { token, owner, repo, path } = parseGitHubInput();
+        if (path && path !== '') {
+            if (!confirm(`Click OK to confirm deletion of file "${path}"`)) return;
+            const gh = new GitHub(token, owner, repo, branch.value);
+            await gh.deleteFile(path, "deleted using github-explorer");
+            ghUpBtn.click();
+        } else {
+            ////otherwise we want to delete a repo (keep in mind this requires delete_repo permissions)
+            if (!confirm(`Click OK to confirm deletion of repo "${repo}"`)) return;
+            fetch(`https://api.github.com/repos/${owner}/${repo}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
+                .then((response) => { console.log(response); ghUpBtn.click() })
+                .catch((error) => console.log(error));
+        }
+    });
+
     //retrieve token, owner, repo, path
     const parseGitHubInput = () => {
         const token = localStorage.getItem('GITHUB_API_KEY') || (prompt("Please input GITHUB_API_KEY", "") || '').trim();
@@ -204,15 +223,27 @@
         }).catch(error => console.error(error));
     }
 
+    let tryRepoCount = {};
+    const createRepo = (repo, token, path) => {
+        const repoData = { name: repo, auto_init: true };
+        const currentCount = (!tryRepoCount[repo]) ? 0 : tryRepoCount[repo];
+        tryRepoCount[repo] = currentCount + 1;
+        if (tryRepoCount[repo] > 1) return; //prevent flooding if we already tried to create the repo once
+        return fetch('https://api.github.com/user/repos', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(repoData)
+        }).then(response => response.json()).then(data => fetchDirs());
+    };
+
     //We need to check the branch first
     const fetchDirs = () => {
         ghUploadDiv.style.display = 'block';
         const { token, owner, repo, path } = parseGitHubInput();
 
         //make sure the branch actually exists
-        fetch(`https://api.github.com/repos/${owner}/${repo}/branches`)
+        fetch(`https://api.github.com/repos/${owner}/${repo}/branches`, { headers: { Authorization: `Bearer ${token}` } })
         .then(response => response.json()).then(branches => {
-            console.log(branches);
+            //console.log(branches);
             const val = branch.value;
             //const hasBranch = branches.some(b => b.name === val);
             branch.innerHTML = '';
@@ -228,7 +259,10 @@
 
             //if (!hasBranch) branch.value = branches[0].name;
             fetchDirs2(token, owner, repo, path);
-        }).catch(error => console.error(error));
+        }).catch(error => {
+            //if we fail here generally it means the repo doesn't exist and we should create it
+            createRepo(repo, token, path);
+        });
     }
 
     //fetch files within repo and show as a link column (blob or tree) and lineCount column
@@ -287,7 +321,7 @@
                 newCell.appendChild(newText);
             });
         }).catch(error => {
-            console.log(error);
+            //console.log(error);
             //we must be trying to create a new file if this error is caught
             ghFileDiv.style.display = 'block';
             ghFile.focus();
@@ -295,11 +329,6 @@
                 const { token, owner, repo, path } = parseGitHubInput();
                 const gh = new GitHub(token, owner, repo, branch.value);
                 await gh.createOrUpdateFile(path, ghFile.value, "added using github-explorer");
-                ghUpBtn.click();
-            };
-            ghFileDel.onclick = async () => {
-                const gh = new GitHub(token, owner, repo, branch.value);
-                await gh.deleteFile(path, "deleted using github-explorer");
                 ghUpBtn.click();
             };
         });
@@ -319,11 +348,6 @@
                 await gh.createOrUpdateFile(path, ghFile.value, "updated using github-explorer");
                 ghUpBtn.click();
             };
-            ghFileDel.onclick = async () => {
-                const gh = new GitHub(token, owner, repo, branch.value);
-                await gh.deleteFile(path, "deleted using github-explorer");
-                ghUpBtn.click();
-            };
         })
         .catch(error => console.error(error));
     }
@@ -337,7 +361,7 @@
             reader.onload = async (e) => {
                 const contents = e.target.result;
                 const gh = new GitHub(token, owner, repo, branch.value);
-                console.log((path === '') ? file.name : path + '/' + file.name)
+                //console.log((path === '') ? file.name : path + '/' + file.name)
                 await gh.createOrUpdateFile((path === '') ? file.name : path + '/' + file.name, contents, "uploaded using github-explorer");
             };
             reader.readAsBinaryString(file);
