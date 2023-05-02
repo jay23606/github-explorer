@@ -196,6 +196,7 @@
               node {
                 name
                 updatedAt
+                viewerCanAdminister
               }
             }
           }
@@ -212,8 +213,17 @@
             repos.forEach(repo => {
                 repo = repo.node;
                 const newRow = tbl.insertRow();
-                let newCell = newRow.insertCell();
-                let newText = $el('A', { href: '#', textContent: repo.name, style: 'color:greenyellow' });
+                let newCell = null, newText = null;
+
+                if (!repo.viewerCanAdminister) {
+                    newCell = newRow.insertCell();
+                    newText = $el('A', { href: '#', textContent: '🔀', title: 'Fork this repo' });
+                    newText.on('click', e => forkRepo(token, owner, repo.name));
+                    newCell.appendChild(newText);
+                }
+
+                newCell = newRow.insertCell();
+                newText = $el('A', { href: '#', textContent: repo.name, style: 'color:greenyellow' });
                 newText.on('click', e => {
                     ghInput.value += `/${repo.name}`; 
                     fetchDirs();
@@ -224,6 +234,15 @@
                 newCell.appendChild(newText);
             });
         }).catch(error => console.error(error));
+    }
+
+    const forkRepo = (token, owner, repo) => {
+        fetch(`https://api.github.com/repos/${owner}/${repo}/forks`, {method: "POST",headers: {Authorization: `Bearer ${token}`}})
+            .then(response => response.json()).then(data => {
+                ghInput.value = data.full_name;
+                fetchDirs();
+            })
+            .catch((error) => console.log(error));
     }
 
     let tryRepoCount = {};
@@ -308,7 +327,7 @@
                 let newCell = newRow.insertCell();
                 let newText = null;
                 if(entry.type === 'blob'){
-                    newText = $el('A', { href: `https://raw.githack.com/${nameWithOwner}/${branch.value}/${entry.path}`, textContent: '🌐', target: '_blank' });
+                    newText = $el('A', { href: `https://raw.githack.com/${nameWithOwner}/${branch.value}/${entry.path}`, title:'Open content in new tab', textContent: '🌐', target: '_blank' });
                     newCell.appendChild(newText);
                 }
                 newText = $el('A', { href: '#', textContent: entry.name, style: (entry.type === 'tree') ? 'color:greenyellow' : '' });
