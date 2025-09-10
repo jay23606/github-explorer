@@ -8,7 +8,7 @@ Live demo:
 
 https://raw.githack.com/jay23606/github-explorer/master/index.html
 
-![screenshot](screenshot.png)
+![screenshot](screenshot.png)aaa
 
 Uses GitHub REST and GraphQL endpoints:
 
